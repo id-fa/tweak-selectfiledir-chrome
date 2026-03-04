@@ -2,8 +2,29 @@ import os
 import shutil
 import subprocess
 import json
+import locale
 import tkinter as tk
 from tkinter import filedialog, messagebox
+
+# --- i18n ---
+_lang = locale.getdefaultlocale()[0] or ""
+_ja = _lang.startswith("ja")
+
+MSG = {
+    "err":                "エラー" if _ja else "Error",
+    "no_userdata":        "Chrome User Data が見つかりません" if _ja else "Chrome User Data not found",
+    "no_profiles":        "プロファイルが見つかりません" if _ja else "No profiles found",
+    "window_title":       "Chrome プロファイル選択" if _ja else "Chrome Profile Selector",
+    "select_label":       "プロファイルを選択してください" if _ja else "Select a profile",
+    "no_selection":       "プロファイルを選択してください" if _ja else "Please select a profile",
+    "folder_dialog":      "設定するフォルダを選択（キャンセルで空にする）" if _ja else "Select folder (cancel to clear)",
+    "btn_execute":        "実行" if _ja else "Execute",
+    "done_title":         "完了" if _ja else "Done",
+    "done_body":          "{name} を更新しました。\n\n設定フォルダ: {folder}\n\n【復旧方法】\n1. Chromeを終了\n2. Preferences を削除\n3. Preferences.bak を Preferences にリネーム\n4. Chrome起動"
+                          if _ja else
+                          "{name} updated.\n\nFolder: {folder}\n\n[Recovery]\n1. Close Chrome\n2. Delete Preferences\n3. Rename Preferences.bak to Preferences\n4. Restart Chrome",
+    "empty_folder":       "空" if _ja else "(empty)",
+}
 
 # --- Chrome User Data パス ---
 user_data_dir = os.path.join(
@@ -12,7 +33,7 @@ user_data_dir = os.path.join(
 )
 
 if not os.path.exists(user_data_dir):
-    messagebox.showerror("エラー", "Chrome User Data が見つかりません")
+    messagebox.showerror(MSG["err"], MSG["no_userdata"])
     exit()
 
 # --- 表示名取得 ---
@@ -39,12 +60,12 @@ for folder in os.listdir(user_data_dir):
 profiles.sort()
 
 if not profiles:
-    messagebox.showerror("エラー", "プロファイルが見つかりません")
+    messagebox.showerror(MSG["err"], MSG["no_profiles"])
     exit()
 
 # --- GUI ---
 root = tk.Tk()
-root.title("Chrome プロファイル選択")
+root.title(MSG["window_title"])
 
 selected_profile = tk.StringVar()
 
@@ -53,7 +74,7 @@ for p in profiles:
     display = f"{profile_names.get(p, p)} ({p})"
     display_map[display] = p
 
-tk.Label(root, text="プロファイルを選択してください").pack(pady=5)
+tk.Label(root, text=MSG["select_label"]).pack(pady=5)
 
 listbox = tk.Listbox(root, width=50, height=10)
 for name in display_map.keys():
@@ -63,7 +84,7 @@ listbox.pack(padx=10, pady=5)
 def on_execute():
     selection = listbox.curselection()
     if not selection:
-        messagebox.showerror("エラー", "プロファイルを選択してください")
+        messagebox.showerror(MSG["err"], MSG["no_selection"])
         return
 
     display_name = listbox.get(selection[0])
@@ -77,7 +98,7 @@ def on_execute():
         initial_dir = os.path.expanduser("~")  # fallback
 
     target_dir = filedialog.askdirectory(
-        title="設定するフォルダを選択（キャンセルで空にする）",
+        title=MSG["folder_dialog"],
         initialdir=initial_dir
     )
 
@@ -114,18 +135,15 @@ def on_execute():
         json.dump(prefs, f, ensure_ascii=False)
 
     messagebox.showinfo(
-        "完了",
-        f"{display_name} を更新しました。\n\n"
-        f"設定フォルダ: {target_dir if target_dir else '空'}\n\n"
-        "【復旧方法】\n"
-        "1. Chromeを終了\n"
-        "2. Preferences を削除\n"
-        "3. Preferences.bak を Preferences にリネーム\n"
-        "4. Chrome起動"
+        MSG["done_title"],
+        MSG["done_body"].format(
+            name=display_name,
+            folder=target_dir if target_dir else MSG["empty_folder"]
+        )
     )
 
     root.destroy()
 
-tk.Button(root, text="実行", command=on_execute).pack(pady=10)
+tk.Button(root, text=MSG["btn_execute"], command=on_execute).pack(pady=10)
 
 root.mainloop()
