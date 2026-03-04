@@ -24,6 +24,10 @@ MSG = {
                           if _ja else
                           "{name} updated.\n\nFolder: {folder}\n\n[Recovery]\n1. Close Chrome\n2. Delete Preferences\n3. Rename Preferences.bak to Preferences\n4. Restart Chrome",
     "empty_folder":       "空" if _ja else "(empty)",
+    "confirm_kill_title": "確認" if _ja else "Confirm",
+    "confirm_kill_body":  "Chromeを強制終了します。\n書きかけのフォーム等がある場合はデータが失われます。\n\n続行しますか？"
+                          if _ja else
+                          "Chrome will be force-closed.\nUnsaved data (e.g. forms) will be lost.\n\nContinue?",
 }
 
 # --- Chrome User Data パス ---
@@ -107,6 +111,11 @@ def on_execute():
         target_dir = os.path.normpath(target_dir)
     else:
         target_dir = ""
+
+    # Chrome終了前の確認
+    if not messagebox.askokcancel(MSG["confirm_kill_title"], MSG["confirm_kill_body"]):
+        root.deiconify()
+        return
 
     # Chrome終了
     subprocess.run(
